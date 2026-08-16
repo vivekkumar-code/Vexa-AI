@@ -1,12 +1,14 @@
 import streamlit as st
 import sqlite3
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 # ---------------- PAGE CONFIG ----------------
 
@@ -15,6 +17,7 @@ st.set_page_config(
     page_icon="🤖",
     layout="centered"
 )
+
 
 # ---------------- DATABASE ----------------
 
@@ -26,6 +29,7 @@ def get_db():
 
 
 def create_database():
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -52,6 +56,7 @@ def create_database():
 
 
 def create_chat(title="New Chat"):
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -69,6 +74,7 @@ def create_chat(title="New Chat"):
 
 
 def save_message(chat_id, role, content):
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -78,7 +84,12 @@ def save_message(chat_id, role, content):
         (chat_id, role, content, created_at)
         VALUES (?, ?, ?, ?)
         """,
-        (chat_id, role, content, datetime.now().isoformat())
+        (
+            chat_id,
+            role,
+            content,
+            datetime.now().isoformat()
+        )
     )
 
     conn.commit()
@@ -86,6 +97,7 @@ def save_message(chat_id, role, content):
 
 
 def get_chats():
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -101,6 +113,7 @@ def get_chats():
 
 
 def get_messages(chat_id):
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -129,9 +142,12 @@ create_database()
 # ---------------- SESSION STATE ----------------
 
 if "chat_id" not in st.session_state:
+
     st.session_state.chat_id = create_chat()
 
+
 if "messages" not in st.session_state:
+
     st.session_state.messages = []
 
 
@@ -140,10 +156,13 @@ if "messages" not in st.session_state:
 @st.cache_resource
 def load_model():
 
+    HF_TOKEN = st.secrets["HF_TOKEN"]
+
     llm = HuggingFaceEndpoint(
         repo_id="Qwen/Qwen2.5-7B-Instruct",
         task="text-generation",
-        temperature=0.7
+        temperature=0.7,
+        huggingfacehub_api_token=HF_TOKEN
     )
 
     return ChatHuggingFace(llm=llm)
@@ -168,6 +187,10 @@ If the user asks who your father is, say:
 "My father's name is Vivek Engineer."
 
 Answer all other questions normally, clearly and helpfully.
+
+IMPORTANT:
+Never guess the current date, current day, or current time.
+The application handles date, day and time separately.
 """
 )
 
@@ -178,8 +201,10 @@ with st.sidebar:
 
     st.title("🤖 Vexa AI")
 
-    # New Chat
-    if st.button("➕ New Chat", use_container_width=True):
+    if st.button(
+        "➕ New Chat",
+        use_container_width=True
+    ):
 
         st.session_state.chat_id = create_chat()
         st.session_state.messages = []
@@ -218,6 +243,7 @@ with st.sidebar:
 # ---------------- MAIN UI ----------------
 
 st.title("🤖 Vexa AI")
+
 st.write("Ask me anything!")
 
 
@@ -226,17 +252,21 @@ st.write("Ask me anything!")
 for message in st.session_state.messages:
 
     with st.chat_message(message["role"]):
+
         st.write(message["content"])
 
 
 # ---------------- CHAT INPUT ----------------
 
-question = st.chat_input("Ask Vexa AI anything...")
+question = st.chat_input(
+    "Ask Vexa AI anything..."
+)
 
 
 if question:
 
-    # Save user message
+    # ---------------- SAVE USER MESSAGE ----------------
+
     st.session_state.messages.append({
         "role": "user",
         "content": question
@@ -248,31 +278,183 @@ if question:
         question
     )
 
-    # Show user message
+
+    # ---------------- SHOW USER MESSAGE ----------------
+
     with st.chat_message("user"):
+
         st.write(question)
 
 
-    # Prepare messages for model
+    # =====================================================
+    # CURRENT INDIA DATE / DAY / TIME
+    # =====================================================
 
-    messages = [system_message]
+    india_now = datetime.now(
+        ZoneInfo("Asia/Kolkata")
+    )
 
-    for message in st.session_state.messages:
+    current_date = india_now.strftime(
+        "%d %B %Y"
+    )
 
-        if message["role"] == "user":
-            messages.append(
-                HumanMessage(content=message["content"])
-            )
+    current_day = india_now.strftime(
+        "%A"
+    )
 
-        elif message["role"] == "assistant":
-            messages.append(
-                AIMessage(content=message["content"])
-            )
+    current_time = india_now.strftime(
+        "%I:%M %p"
+    )
 
 
-    # Generate response
+    # Convert question to lowercase
 
-    with st.chat_message("assistant"):
+    q = question.lower().strip()
+
+
+    # =====================================================
+    # DATE DETECTION
+    # =====================================================
+
+    date_words = [
+        "date",
+        "tareekh",
+        "तारीख"
+    ]
+
+    date_context = [
+        "aaj",
+        "today",
+        "current",
+        "abhi",
+        "batao",
+        "bata",
+        "kya hai"
+    ]
+
+    is_date_question = (
+        any(word in q for word in date_words)
+        and any(word in q for word in date_context)
+    )
+
+
+    # =====================================================
+    # DAY DETECTION
+    # =====================================================
+
+    day_words = [
+        "day",
+        "din",
+        "वार",
+        "दिन"
+    ]
+
+    day_context = [
+        "aaj",
+        "today",
+        "current",
+        "kaun",
+        "konsa",
+        "kaunsa",
+        "kya"
+    ]
+
+    is_day_question = (
+        any(word in q for word in day_words)
+        and any(word in q for word in day_context)
+    )
+
+
+    # =====================================================
+    # TIME DETECTION
+    # =====================================================
+
+    time_words = [
+        "time",
+        "samay",
+        "baje",
+        "baj",
+        "समय"
+    ]
+
+    time_context = [
+        "abhi",
+        "current",
+        "now",
+        "kya",
+        "kitne",
+        "batao",
+        "bata"
+    ]
+
+    is_time_question = (
+        any(word in q for word in time_words)
+        and any(word in q for word in time_context)
+    )
+
+
+    # =====================================================
+    # DATE RESPONSE
+    # =====================================================
+
+    if is_date_question:
+
+        answer = (
+            f"Aaj ki date {current_date} hai."
+        )
+
+
+    # =====================================================
+    # DAY RESPONSE
+    # =====================================================
+
+    elif is_day_question:
+
+        answer = (
+            f"Aaj {current_day} hai."
+        )
+
+
+    # =====================================================
+    # TIME RESPONSE
+    # =====================================================
+
+    elif is_time_question:
+
+        answer = (
+            f"Abhi India mein "
+            f"{current_time} IST ho raha hai."
+        )
+
+
+    # =====================================================
+    # NORMAL AI QUESTION
+    # =====================================================
+
+    else:
+
+        messages = [system_message]
+
+        for message in st.session_state.messages:
+
+            if message["role"] == "user":
+
+                messages.append(
+                    HumanMessage(
+                        content=message["content"]
+                    )
+                )
+
+            elif message["role"] == "assistant":
+
+                messages.append(
+                    AIMessage(
+                        content=message["content"]
+                    )
+                )
+
+
+        # ---------------- GENERATE RESPONSE ----------------
 
         with st.spinner("Thinking..."):
 
@@ -282,21 +464,29 @@ if question:
 
                 answer = result.content
 
-                st.write(answer)
-
-                # Save assistant response
-
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": answer
-                })
-
-                save_message(
-                    st.session_state.chat_id,
-                    "assistant",
-                    answer
-                )
-
             except Exception as e:
 
-                st.error(f"Error: {e}")
+                answer = f"Error: {e}"
+
+
+    # =====================================================
+    # SHOW ASSISTANT RESPONSE
+    # =====================================================
+
+    with st.chat_message("assistant"):
+
+        st.write(answer)
+
+
+    # ---------------- SAVE ASSISTANT RESPONSE ----------------
+
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": answer
+    })
+
+    save_message(
+        st.session_state.chat_id,
+        "assistant",
+        answer
+    )

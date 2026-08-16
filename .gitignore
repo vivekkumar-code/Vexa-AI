@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 vexa_history.db
 chat_history.db
+.streamlit/secrets.toml
