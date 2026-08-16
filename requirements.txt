@@ -29,3 +29,6 @@ scikit-learn
 streamlit
 
 torch
+
+torch
+torchvision
