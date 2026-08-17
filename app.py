@@ -161,7 +161,7 @@ def load_model():
     llm = HuggingFaceEndpoint(
         repo_id="Qwen/Qwen2.5-7B-Instruct",
         task="text-generation",
-        temperature=1.5,
+        temperature=1.0,
         huggingfacehub_api_token=HF_TOKEN
     )
 
@@ -187,6 +187,11 @@ If the user asks who your father is, say:
 "My father's name is Vivek Engineer."
 
 Answer all other questions normally, clearly and helpfully.
+Always reply in the same language as the user.
+If the user asks in Hindi, reply in Hindi.
+If the user asks in English, reply in English.
+If the user asks in Hinglish, reply in Hinglish.
+Never use Chinese or any other language unless the user asks for it.
 
 IMPORTANT:
 Never guess the current date, current day, or current time.
