@@ -161,7 +161,7 @@ def load_model():
     llm = HuggingFaceEndpoint(
         repo_id="Qwen/Qwen2.5-7B-Instruct",
         task="text-generation",
-        temperature=0.7,
+        temperature=1.5,
         huggingfacehub_api_token=HF_TOKEN
     )
 
