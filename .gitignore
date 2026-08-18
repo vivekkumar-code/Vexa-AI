@@ -5,3 +5,4 @@ __pycache__/
 vexa_history.db
 chat_history.db
 .streamlit/secrets.toml
+history.json

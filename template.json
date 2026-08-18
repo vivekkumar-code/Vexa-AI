@@ -1,0 +1,19 @@
+{
+    "name": null,
+    "input_variables": [
+        "language_input",
+        "length_input",
+        "paper_section",
+        "question_section",
+        "style_input"
+    ],
+    "optional_variables": [],
+    "output_parser": null,
+    "partial_variables": {},
+    "metadata": null,
+    "tags": null,
+    "template": "\n{paper_section}\n\n{question_section}\n\nExplanation style: {style_input}\n- If style is \"Mathematical\", you MUST include the relevant equations, formulas, and notation.\n  IMPORTANT: Write every equation in proper LaTeX format, wrapped between double dollar signs, like this:\n  $$ equation_here $$\n  Put each equation on its own separate line, and explain what every symbol means in simple words.\n- If style is \"Code-Oriented\", include relevant pseudocode or Python-like code snippets.\n- If style is \"Beginner-Friendly\", use simple analogies and avoid technical jargon.\n- If style is \"Technical\", use precise machine learning / deep learning terminology.\n\nExplanation length: {length_input}\nOutput language: {language_input}\n\nMake sure the explanation strictly matches the requested style, length, and language.\n",
+    "template_format": "f-string",
+    "validate_template": false,
+    "_type": "prompt"
+}
